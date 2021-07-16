@@ -1,0 +1,38 @@
+---
+title: "Chla processed"
+author: "Dunia Rios Yunes"
+date: "7/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+##Read files named xyz1111.csv, xyz2222.csv, etc.
+filenames <- list.files(path="../Raw_data",
+    pattern="+chla_results.csv", full.names = T)
+
+filesubt<- list.files(path="../Raw_data",pattern="+chla_results_subtidal.csv", full.names = T)
+
+##Create list of data frame names without the ".csv" part 
+names <-substr(filenames,13,30)
+namessubt <- substr(filesubt,13,39)
+
+###Load all files
+for(i in names){
+    filepath <- file.path("../Raw_data",paste(i,".csv",sep=""))
+    assign(i, read.csv(filepath, #colClasses=c("character","factor",rep("numeric",4)),
+    sep = ","))
+}
+
+for(i in namessubt){
+    filepath <- file.path("../Raw_data",paste(i,".csv",sep=""))
+    assign(i, read.csv(filepath, #colClasses=c("character","factor",rep("numeric",4)),
+    sep = ","))
+}
+
+#need to add date column, elevation column, and, merge column for site, depth, chla
+```
+
