@@ -1,0 +1,16 @@
+---
+title: "Chla analysis"
+author: "Dunia"
+date: "7/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Data files
+```{r}
+Intertidal <- read.csv("../processed_data/Intertidal Chla.csv")[,-1]
+Subtidal <- read.csv("../processed_data/Subtidal Chla.csv")[,-1]
+```
+
