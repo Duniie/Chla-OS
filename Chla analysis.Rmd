@@ -7,10 +7,108 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(plot3D)
 ```
 Data files
 ```{r}
 Intertidal <- read.csv("../processed_data/Intertidal Chla.csv")[,-1]
+Intertidal <- Intertidal[!is.na(Intertidal$chla),]
 Subtidal <- read.csv("../processed_data/Subtidal Chla.csv")[,-1]
+Subtidal <- Subtidal[!is.na(Subtidal$chla),]
+
+Intertidal$Depth <- (Intertidal$Depth.From + Intertidal$Depth.To) / 2
+Subtidal$Depth <- (Subtidal$Depth.From + Subtidal$Depth.To) / 2
 ```
+#Intertidal
+```{r}
+Intermean <- data.frame(aggregate(Intertidal[,"chla"], list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Year = Intertidal$Year, Date = Intertidal$Date, Depth = Intertidal$Depth), FUN = mean))
+
+Intermean <- Intermean[order(Intermean[,"MonthNr"], decreasing = F),]
+Intermean <- Intermean[order(Intermean[,"Depth"], decreasing = F),]
+Intermean <- Intermean[order(Intermean[,"Year"], decreasing = F),]
+```
+```{r}
+Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = FALSE){
+  par(mar = c(2,1,1,0))
+  Site <- subset(Data, Site == Station)
+  Site2D <- reshape(Site[,c("Depth","Date", "x")], direction = "wide", 
+       timevar = "Depth", idvar = "Date")
+  Mon <- as.numeric(Site2D$Date)
+  depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "x.",""))
+  colnames(Site2D)[-1] <- depth
+  # this should be done properly: integrated over depth, taking into account thickness of slices and porosity
+  plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station) #Chla unit is per gram, we need to transform it to cm3
+  par(mar = c(4,4,3,1))
+  image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
+      xlab = "Month", ylab = "depth" ) 
+  par(mar = c(3,4,4,3))
+  if (! log)
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = "grey",
+  lwd = 2, lty = 1)
+  else
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = jet.col(14),#"grey",
+  lwd = 2, lty = 1, log = "y", ylim = c(10,0.2))
+  
+  if (leg) #Legend
+  legend("bottomright", fill = jet.col(14), legend = Mon, title = "month", bty = "n")  
+  
+  invisible(Site2D)
+  
+}
+
+par(mfcol = c(3,3), oma = c(2,0,0,2), las = 1)
+LOG <- TRUE
+
+DT <- Images(Station = "Dortsman", log = LOG)
+OZ <- Images(Station = "Olzenden", log = LOG)
+ZK <- Images(Station = "Zandkreek", log = LOG, leg = TRUE)
+
+```
+```{r, fig.width=8, fig.height=8}
+Depth <- (as.numeric(colnames(DT)[-1]))
+#par(ask = TRUE)
+
+LinMOd <- function(STa, prt = TRUE, k=0.05, maxD = rep(10, nrow(ST))){ #K = 0.01 in Morys and Karline suggests 0.05
+
+DB <- rsq <- NULL
+M <- STa[,1]
+ST <- STa[,-1]
+ par(mar = c(5, 4, 4, 4), oma = c(4,4,4,4))
+for (i in 1:nrow(ST)){
+  Dat <- ST[i,Depth <= maxD[i]]
+  DD <- Depth[Depth <= maxD[i]]
+  plot(Depth, log(ST[i,]), main = M[i], xlab = "Depth", ylab = "log(Chl)")
+  dblm <- lm(log(as.numeric(Dat))~DD)
+  sdblm<-summary(dblm)
+  if(prt) print(sdblm)
+  DB <- c(DB, k/(-coef(dblm)[1])^2)
+  rsq <- c(rsq, sdblm$r.squared)
+  abline(dblm)
+}
+ #mtext(outer = TRUE, side = 3,  ????formalArgs(LinMOd)[1] , cex = 1) #need to fix this so that it gives the name of the station
+
+plot(M, DB, xlab = "Month", ylab = "Db cm2/d")
+plot(M, rsq, xlab = "Month", ylab = "rsq")
+
+  ZK_Db <- data.frame(month = M, db = DB, rsq = rsq)
+  return(ZK_Db)
+}
+
+#par(mfrow = c(4, 3))
+layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,0,0), 4, 4, byrow = TRUE))
+DTdb  <- LinMOd(DT, FALSE,  maxD = rep(4, times = 14)) 
+OZdb <- LinMOd(OZ, FALSE, maxD = rep(4, times = 14))
+ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) 
+
+summary(DTdb)
+summary(OZdb)
+summary(ZKdb)
+```
+```{r}
+par(mfrow = c(3,1))
+plot(DTdb$month, DTdb$db, main = "Dortsman", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(OZdb$month, OZdb$db, main = "Olzenden", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(ZKdb$month, ZKdb$db, main = "Zandkreek", xlab = "month", ylab = "Db, cm2/d", type = "b")
+```
+
 
