@@ -28,10 +28,10 @@ for(i in seq_along(filesubt)){
 Merging the dataframes
 ```{r}
  Inter <- rbindlist(intertidal,use.names = T, fill =T)
- Inter <- Inter[,c("Sampling.Date", "Code", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "chla")]
+ Inter <- Inter[,c("Sampling.Date", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "Location", "chla")]
 
  Subt <- rbindlist(subtidal,use.names = T, fill =T)
- Subt <- Subt[,c("Sampling.Date", "Code", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "chla")]
+ Subt <- Subt[,c("Sampling.Date", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "chla")]
 ```
 Standardize date and adding month and year column
 ```{r}
@@ -44,14 +44,20 @@ Inter$Year <- format(as.Date(Inter$Date), "%Y")
 Subt$Date <- parse_date_time(x = Subt$Sampling.Date,
                 orders = c("d/m/y", "d/m/y H:M", "d-m-y", "m/d/y"),
                 locale = Sys.getlocale("LC_TIME"))
+Subt[Subt$Sampling.Date == '10/08/2018',"Date"] <- parse_date_time(x = "10/08/2018",
+                orders = c("m/d/y"),
+                locale = Sys.getlocale("LC_TIME"))
 Subt$MonthNr <- format(as.Date(Subt$Date), "%m")
 Subt$Year <- format(as.Date(Subt$Date), "%Y")
 ```
 Adding the site
 ```{r}
 Inter[grep("Dortsman", Inter$Customer.Description),"Site"] <- c("Dortsman")
+Inter[grep("Dortsman", Inter$Location),"Site"] <- c("Dortsman")
 Inter[grep("Olzenden", Inter$Customer.Description),"Site"] <- c("Olzenden")
+Inter[grep("Olzenden", Inter$Location),"Site"] <- c("Olzenden")
 Inter[grep("Zandkreek", Inter$Customer.Description),"Site"] <- c("Zandkreek")
+Inter[grep("Zandkreek", Inter$Location),"Site"] <- c("Zandkreek")
 
 Subt[grep("Hammon", Subt$Customer.Description),"Site"] <- c("Hammon")
 Subt[grep("Vianen", Subt$Customer.Description),"Site"] <- c("Vianen")
@@ -59,7 +65,25 @@ Subt[grep("Lodijkseg", Subt$Customer.Description),"Site"] <- c("Lodijkseg")
 ```
 Fixing the replicate numbers
 ```{r}
+Inter[grep(" 1 ", Inter$Customer.Description),"Replicate"] <- c("1")
+Inter[grep("1A ", Inter$Customer.Description),"Replicate"] <- c("1")
+Inter[grep(" 2 ", Inter$Customer.Description),"Replicate"] <- c("2")
+Inter[grep("1B ", Inter$Customer.Description),"Replicate"] <- c("2")
+Inter[grep(" 3 ", Inter$Customer.Description),"Replicate"] <- c("3")
+Inter[grep("A", Inter$Replicate),"Replicate"] <- c("1")
+Inter[grep("B", Inter$Replicate),"Replicate"] <- c("2")
 
+Subt[grep(" 1 ", Subt$Customer.Description),"Replicate"] <- c("1")
+Subt[grep(" 2 ", Subt$Customer.Description),"Replicate"] <- c("2")
+Subt[grep(" 3 ", Subt$Customer.Description),"Replicate"] <- c("3")
+```
+Subsetting useful columns
+```{r}
+Inter <- Inter[, c(2,4,5,7:11)]
+Subt <- Subt[, c(2,3:10)]
+
+write.csv(Inter, "../processed_data/Intertidal Chla.csv")
+write.csv(Subt, "../processed_data/Subtidal Chla.csv")
 ```
 
 
