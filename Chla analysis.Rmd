@@ -19,14 +19,56 @@ Subtidal <- Subtidal[!is.na(Subtidal$chla),]
 Intertidal$Depth <- (Intertidal$Depth.From + Intertidal$Depth.To) / 2
 Subtidal$Depth <- (Subtidal$Depth.From + Subtidal$Depth.To) / 2
 ```
-#Intertidal
 ```{r}
 Intermean <- data.frame(aggregate(Intertidal[,"chla"], list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Year = Intertidal$Year, Date = Intertidal$Date, Depth = Intertidal$Depth), FUN = mean))
 
+colnames(Intermean)[6] <- "Chla"
 Intermean <- Intermean[order(Intermean[,"MonthNr"], decreasing = F),]
 Intermean <- Intermean[order(Intermean[,"Depth"], decreasing = F),]
 Intermean <- Intermean[order(Intermean[,"Year"], decreasing = F),]
 ```
+#Intertidal
+Depth profiles per site per month
+```{r,fig.width = 15, fig.height = 7}
+par(mfrow = c(1,3), xpd = TRUE, mar = c(1,3,3,1), oma = c(1,4,4,1))
+Yearlines <- function(Data = Intermean, Station, col){
+  Site  <- Data[Data$Site == Station, ]
+  Moname <- unique(Site$Date)
+  
+ plot(y = Site$Depth, x = Site[,"Chla"], log = "x", type = "n", 
+         main = " ", bty = "n", cex.axis = 1.5,  
+         ylim = c(-10,0), xlab = " ", xaxt = "n", ylab = " ")
+ # if(Station == "Dortsman"){
+ # mtext("DT", cex = 2.5, line = 4)}
+ # else if (Station == "Olzende"){
+ # mtext("OZ", cex = 2.5, line = 4)}
+ # else if (Station == "Zandkreek"){
+ # mtext("ZK", cex = 2.5, line = 4)}
+ 
+  for (m in Moname) {
+      Mon <- subset(Site, Date == m)                  # select corresponding Month
+      with (Mon, lines(x = Mon[,"Chla"], y = Depth, type = "l", lwd = 2, col = col[as.integer(m)-2], pch = 19))
+      axis(side = 3, pos = 0, cex.axis = 1.5)
+      mtext("ug/g", side = 3, line = 1.2, cex = 1.7)
+}
+ mtext("cm", side = 2, cex = 2, line = 1, outer = T )
+ 
+#  if (Station == "ZK"){
+# legend("bottomright", col = col, pch = 19, legend = c("March", "April", "May", "June", "July", "August", "September", "October", "November", "December","January 2020", "February"), cex = 1.5,
+#            bty = "n") }
+}
+Stats <- unique(Intermean$Site)
+Dat <- length(unique(Intermean$Date))
+
+gradient <- colorRampPalette(colors = c("green", "red", "blue")) 
+colours <- gradient(length(Dat))
+
+for (i in 1:length(Stats))
+ Yearlines(Station = Stats[i], col = colours)
+```
+```
+
+
 ```{r}
 Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = FALSE){
   par(mar = c(2,1,1,0))
@@ -64,6 +106,28 @@ OZ <- Images(Station = "Olzenden", log = LOG)
 ZK <- Images(Station = "Zandkreek", log = LOG, leg = TRUE)
 
 ```
+# Bioturbation estimates
+
+The analytical solution of a model describes the concentration of a substance (Chl) versus depth (x) and that has only bioturbation (Db) and decay (k) is:    decay is also given as Lamda
+
+Chl(x) = Chl(0)* exp(-sqrt(k/Db)*x)
+
+The decay rate, k for chl is around 0.05/day, and usually it is assumed that there is no temperature dependence.
+NOTE: Morys 2016 gives a K of 0.01/d for muddy sediments, 
+
+Taking a log of both the right- and left-hand side, we get:
+
+log(Chl(x)) = log(Chl(0)* exp(-sqrt(k/Db)*x))
+
+log(Chl(x)) = -sqrt(k/Db)*x + log(Chl(0)) 
+
+y = a*x + b
+
+where coefficient "a" (the first coeff in a linear model) is -sqrt(k/db). Thus Db =1/(-a ^2/k) unit is Db= cm^2 / y
+
+** NOTE for myself: The equation was transformed as follows: a = -sqrt(k/db) -> -a = sqrt(k/db) -> -a^2 = k/db -> db(-a^2) = k -> db = k/-a^2 then we multiply the right side numerator and denominator by 1/k so we get k (1/k) / -a^2 (1/k) and this results in 1 / (-a^2 / k)
+
+This is assuming independence from temperature
 ```{r, fig.width=8, fig.height=8}
 Depth <- (as.numeric(colnames(DT)[-1]))
 #par(ask = TRUE)
@@ -98,7 +162,7 @@ plot(M, rsq, xlab = "Month", ylab = "rsq")
 layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,0,0), 4, 4, byrow = TRUE))
 DTdb  <- LinMOd(DT, FALSE,  maxD = rep(4, times = 14)) 
 OZdb <- LinMOd(OZ, FALSE, maxD = rep(4, times = 14))
-ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) 
+ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) #need to fiz ZK for some reason the columns are not being selected 
 
 summary(DTdb)
 summary(OZdb)
