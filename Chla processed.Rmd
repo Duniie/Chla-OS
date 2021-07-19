@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-##Read files named xyz1111.csv, xyz2222.csv, etc.
 filenames <- list.files(path="../Raw_data",
     pattern="+chla_results.csv", full.names = T)
 
@@ -21,18 +20,84 @@ names <-substr(filenames,13,30)
 namessubt <- substr(filesubt,13,39)
 
 ###Load all files
-for(i in names){
-    filepath <- file.path("../Raw_data",paste(i,".csv",sep=""))
-    assign(i, read.csv(filepath, #colClasses=c("character","factor",rep("numeric",4)),
-    sep = ","))
+intertidal <- list()
+for(i in seq_along(filenames)){
+    intertidal[[i]] <-read.csv(file = filenames[i])
 }
 
-for(i in namessubt){
-    filepath <- file.path("../Raw_data",paste(i,".csv",sep=""))
-    assign(i, read.csv(filepath, #colClasses=c("character","factor",rep("numeric",4)),
-    sep = ","))
+subtidal <- list()
+for(i in seq_along(filesubt)){
+    subtidal[[i]] <-read.csv(file = filesubt[i])
 }
-
 #need to add date column, elevation column, and, merge column for site, depth, chla
 ```
+Merging the dataframes
+```{r}
+ Inter <- rbindlist(intertidal,use.names = T, fill =T)
+ Inter <- Inter[,c("Sampling.Date", "Code", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "chla")]
+
+ Subt <- rbindlist(subtidal,use.names = T, fill =T)
+ Subt <- Subt[,c("Sampling.Date", "Code", "Replicate", "Customer.Description", "Depth.From", "Depth.To", "chla")]
+```
+#Standardize date
+```{r}
+Inter$Date <- parse_date_time(x = Inter$Sampling.Date,
+                orders = c("d/m/y", "d/m/y H:M", "d-m-y", "m/d/y"),
+                locale = Sys.getlocale("LC_TIME"))
+```
+
+#Adding month column, elevation column, site,
+```{r}
+mons = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb")
+Location <- c("Dortsman", "Olzenden", "Zandkreek")
+
+Inter$Month <- NULL
+for (n in 1:length(mons)) {
+  Moname <- mons[n]
+   Inter[grep(Moname, df$Sampling.Date),] <- Moname
+}
+
+Sample <- Site <- Month <- Replicate <- Depth.From <- Depth.To <- Chla <- NULL
+for( i in seq_along(intertidal)){
+  
+  Data <- intertidal[[i]]
+  
+for (f in 1:length(Location)) {
+    Locat <- Location[f]
+    df <- Data[grep(Locat, Data$Customer.Description),]
+    df$Site <- Locat
+    
+  for (n in 1:length(mons)) {
+  Moname <- mons[n]
+   oo <- df[grep(Moname, df$Sampling.Date),]
+   oo$Month <- Moname
+   
+   Sample <- c(Sample, oo$Sampling.Date)
+   Site <- c(Site, oo$Site)
+   Month <- c(Month, oo$Month)
+   Replicate <- c(Replicate, oo[,"Replicate"])
+   Depth.From <- c(Depth.From, oo[,"Depth.From"])
+   Depth.To <- c(Depth.To, oo[,"Depth.To"])
+   Chla <- c(Chla, oo$chla)
+   
+  }}
+  invisible(data.frame(Sample = Sample, Site = Site, Month = Month, Replicate = Replicate, Depth.From = Depth.From,
+       Depth.To = Depth.To, Chla = Chla, stringsAsFactors = FALSE))
+  }
+
+Map(cbind, intertidal, Site)
+```
+```{r}
+library(rbenchmark)
+benchmark(
+  do.call = do.call("rbind", intertidal),
+  plyr_rbind.fill = plyr::rbind.fill(intertidal), 
+  plyr_ldply = plyr::ldply(intertidal, data.frame),
+  data.table_rbindlist = as.data.frame(data.table::rbindlist(intertidal)),
+  columns=c('Sampling.Date','Replicate', 'Customer.Description','Depth.From', 'Depth.To', 'chla')
+  ) 
+```
+
+
+
 
