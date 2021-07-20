@@ -225,14 +225,13 @@ TotChla3cm <- TotChla3cm[order(TotChla3cm$Number),]
 tranposing the TChla data
 ```{r}
 TChla3cm <- rbind(t(subset(TotChla3cm, Site == "Dortsman")[, "Chla"]), t(subset(TotChla3cm, Site == "Olzenden")[, "Chla"]), t(subset(TotChla3cm, Site == "Zandkreek")[, "Chla"]))
-colnames(TChla3cm) <- c(1:14)
+colnames(TChla3cm) <- c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun") #c(1:14)
 rownames(TChla3cm ) <- c("Dortsman", "Olzenden", "Zandkreek")
 ```
 #Barplot of total concentration of Chla per site per month first 3 cm
 ```{r}
 par(mar=c(2,2,1,1), oma=c(2,1,1,1))
-ChlaMonth3cm <- barplot(TChla3cm, beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ", xaxt = "n")
-axis(1, at = 1:14, by = 3, labels = c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))
+ChlaMonth3cm <- barplot(TChla3cm, beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#, xaxt = "n")
  mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
  mtext(outer = TRUE, side = 1, "Month", cex = 1)
 legend("topright", legend = rownames(TChla3cm), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
