@@ -17,6 +17,8 @@ Subtidal <- read.csv("../processed_data/Subtidal Chla.csv")[,-1]
 Subtidal <- Subtidal[!is.na(Subtidal$chla),]
 
 Intertidal$Depth <- (Intertidal$Depth.From + Intertidal$Depth.To) / 2
+Intertidal[Intertidal$Depth == c("7"), "Depth"] <- 6.5
+Intertidal[Intertidal$Depth == c("9"), "Depth"] <- 8.5
 Subtidal$Depth <- (Subtidal$Depth.From + Subtidal$Depth.To) / 2
 # Month.names <- c("a", "b", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February" )
 # PigYear$MonthNr <-  match(PigYear$Month, Month.names)
@@ -86,23 +88,20 @@ Dat <- length(unique(Intermean$Number))
 for (i in 1:length(Stats))
  Yearlines(Station = Stats[i] ) # , col = colours)
 ```
-```
-
-
 ```{r}
 Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = FALSE){
-  par(mar = c(2,1,1,0))
+  par(mar = c(4,4,3,0))
   Site <- subset(Data, Site == Station)
-  Site2D <- reshape(Site[,c("Depth","Date", "x")], direction = "wide", 
-       timevar = "Depth", idvar = "Date")
-  Mon <- as.numeric(Site2D$Date)
-  depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "x.",""))
+  Site2D <- reshape(Site[,c("Depth","Number", "Chla")], direction = "wide", 
+       timevar = "Depth", idvar = "Number")
+  Mon <- as.numeric(Site2D$Number)
+  depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "Chla.",""))
   colnames(Site2D)[-1] <- depth
   # this should be done properly: integrated over depth, taking into account thickness of slices and porosity
   plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station) #Chla unit is per gram, we need to transform it to cm3
   par(mar = c(4,4,3,1))
-  image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
-      xlab = "Month", ylab = "depth" ) 
+   image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
+       xlab = "Month", ylab = "depth" ) 
   par(mar = c(3,4,4,3))
   if (! log)
   matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = "grey",
@@ -182,7 +181,7 @@ plot(M, rsq, xlab = "Month", ylab = "rsq")
 layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,0,0), 4, 4, byrow = TRUE))
 DTdb  <- LinMOd(DT, FALSE,  maxD = rep(4, times = 14)) 
 OZdb <- LinMOd(OZ, FALSE, maxD = rep(4, times = 14))
-ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) #need to fiz ZK for some reason the columns are not being selected 
+ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) 
 
 summary(DTdb)
 summary(OZdb)
