@@ -18,53 +18,73 @@ Subtidal <- Subtidal[!is.na(Subtidal$chla),]
 
 Intertidal$Depth <- (Intertidal$Depth.From + Intertidal$Depth.To) / 2
 Subtidal$Depth <- (Subtidal$Depth.From + Subtidal$Depth.To) / 2
+# Month.names <- c("a", "b", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February" )
+# PigYear$MonthNr <-  match(PigYear$Month, Month.names)
 ```
 ```{r}
-Intermean <- data.frame(aggregate(Intertidal[,"chla"], list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Year = Intertidal$Year, Date = Intertidal$Date, Depth = Intertidal$Depth), FUN = mean))
+Intertidal$Number <- NA
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("3"), "Number" ] <- 1
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("4"), "Number" ] <- 2
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("7"), "Number" ] <- 3
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("8"), "Number" ] <- 4
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("9"), "Number" ] <- 5
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("10"), "Number" ] <- 6
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("11"), "Number" ] <- 7
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("12"), "Number" ] <- 8
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("1"), "Number" ] <- 9
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("2"), "Number" ] <- 10
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("3"), "Number" ] <- 11
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("4"), "Number" ] <- 12
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("5"), "Number" ] <- 13
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("6"), "Number" ] <- 14
 
-colnames(Intermean)[6] <- "Chla"
-Intermean <- Intermean[order(Intermean[,"MonthNr"], decreasing = F),]
-Intermean <- Intermean[order(Intermean[,"Depth"], decreasing = F),]
-Intermean <- Intermean[order(Intermean[,"Year"], decreasing = F),]
+```
+
+```{r}
+Intermean <- data.frame(aggregate(list(Chla =Intertidal[,"chla"]), list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Year = Intertidal$Year, Date = Intertidal$Date, Depth = Intertidal$Depth, Number = Intertidal$Number), FUN = mean))
+
+# Intermean <- Intermean[order(Intermean[,"MonthNr"], decreasing = F),]
+# Intermean <- Intermean[order(Intermean[,"Depth"], decreasing = F),]
+# Intermean <- Intermean[order(Intermean[,"Year"], decreasing = F),]
 ```
 #Intertidal
 Depth profiles per site per month
 ```{r,fig.width = 15, fig.height = 7}
 par(mfrow = c(1,3), xpd = TRUE, mar = c(1,3,3,1), oma = c(1,4,4,1))
+
 Yearlines <- function(Data = Intermean, Station, col){
   Site  <- Data[Data$Site == Station, ]
-  Moname <- unique(Site$Date)
+  Moname <- unique(Site$Number)
   
- plot(y = Site$Depth, x = Site[,"Chla"], log = "x", type = "n", 
+ plot(y = -Site$Depth, x = Site[,"Chla"], log = "x", type = "n", 
          main = " ", bty = "n", cex.axis = 1.5,  
          ylim = c(-10,0), xlab = " ", xaxt = "n", ylab = " ")
- # if(Station == "Dortsman"){
- # mtext("DT", cex = 2.5, line = 4)}
- # else if (Station == "Olzende"){
- # mtext("OZ", cex = 2.5, line = 4)}
- # else if (Station == "Zandkreek"){
- # mtext("ZK", cex = 2.5, line = 4)}
+ if(Station == "Dortsman"){
+ mtext("DT", cex = 2.5, line = 4)}
+ else if (Station == "Olzenden"){
+ mtext("OZ", cex = 2.5, line = 4)}
+ else if (Station == "Zandkreek"){
+ mtext("ZK", cex = 2.5, line = 4)}
  
   for (m in Moname) {
-      Mon <- subset(Site, Date == m)                  # select corresponding Month
-      with (Mon, lines(x = Mon[,"Chla"], y = Depth, type = "l", lwd = 2, col = col[as.integer(m)-2], pch = 19))
+      Mon <- subset(Site, Number == m)                  # select corresponding Month
+      with (Mon, lines(x = Mon[,"Chla"], y = -Depth, type = "l", lwd = 2, col = m)) 
       axis(side = 3, pos = 0, cex.axis = 1.5)
       mtext("ug/g", side = 3, line = 1.2, cex = 1.7)
 }
  mtext("cm", side = 2, cex = 2, line = 1, outer = T )
  
-#  if (Station == "ZK"){
-# legend("bottomright", col = col, pch = 19, legend = c("March", "April", "May", "June", "July", "August", "September", "October", "November", "December","January 2020", "February"), cex = 1.5,
-#            bty = "n") }
+ if (Station == "Zandkreek"){
+legend("bottomright", text.col = Moname, legend = c("Mar 2018", "Apr 18", "Jul 18", "Aug 18", "Sep 18", "Oct 18", "Nov 18", "Dec 18", "Jan 19", "Feb 19","Mar 19", "Apr 19", "May 19", "Jun 19"), cex = 1.5, bty = "n") }
 }
 Stats <- unique(Intermean$Site)
-Dat <- length(unique(Intermean$Date))
+Dat <- length(unique(Intermean$Number))
 
-gradient <- colorRampPalette(colors = c("green", "red", "blue")) 
-colours <- gradient(length(Dat))
+# gradient <- colorRampPalette(colors = c("green", "red", "blue")) 
+# colours <- gradient(length(Dat))
 
 for (i in 1:length(Stats))
- Yearlines(Station = Stats[i], col = colours)
+ Yearlines(Station = Stats[i] ) # , col = colours)
 ```
 ```
 
