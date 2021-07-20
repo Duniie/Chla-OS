@@ -99,10 +99,12 @@ Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = 
   depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "Chla.",""))
   colnames(Site2D)[-1] <- depth
   # this should be done properly: integrated over depth, taking into account thickness of slices and porosity
-  plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station) #Chla unit is per gram, we need to transform it to cm3
+  plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station, xaxt = "n") 
+  axis(1, at =c(1:14), labels= c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))#Chla unit is per gram, we need to transform it to cm3
   par(mar = c(4,4,3,1))
    image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
-       xlab = "Month", ylab = "depth" ) 
+       xlab = "Month", ylab = "depth", xaxt = "n")
+    axis(1, at =c(1:14), labels= c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))
   par(mar = c(3,4,4,3))
   if (! log)
   matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = "grey",
