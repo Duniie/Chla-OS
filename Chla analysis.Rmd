@@ -88,6 +88,7 @@ Dat <- length(unique(Intermean$Number))
 for (i in 1:length(Stats))
  Yearlines(Station = Stats[i] ) # , col = colours)
 ```
+The numbers from 1 to 14 correspond to the chronological order of the dates, starting in 2018 with the months: March, April, July, August, September, October, November, December and in 2019 January, February, March, May and June.
 ```{r}
 Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = FALSE){
   par(mar = c(4,4,3,0))
