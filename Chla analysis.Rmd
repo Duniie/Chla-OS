@@ -194,5 +194,25 @@ plot(DTdb$month, DTdb$db, main = "Dortsman", xlab = "month", ylab = "Db, cm2/d",
 plot(OZdb$month, OZdb$db, main = "Olzenden", xlab = "month", ylab = "Db, cm2/d", type = "b")
 plot(ZKdb$month, ZKdb$db, main = "Zandkreek", xlab = "month", ylab = "Db, cm2/d", type = "b")
 ```
+```{r}
+#Chl a total
+TotInter <- data.frame(aggregate(list(Chla = Intermean[,"Chla"]), list(Site = Intermean$Site, MonthNr = Intermean$MonthNr, Number = Intermean$Number), FUN = sum))
+TotInter <- rbind(TotInter,list(Site = "Olzenden", MonthNr = "9", Number = "5", Chla = 0)) #There is no september measurements for Olzenden
+#THIS IS REARRANGING THE PREVIOUS DATA FRAME SO THAT THE MONTH IS A COLUMN AND THE SITE A ROW
+TInter <- rbind(t(subset(TotInter, Site == "Dortsman")[, "Chla"]), t(subset(TotInter, Site == "Olzenden")[, "Chla"]), t(subset(TotInter, Site == "Zandkreek")[, "Chla"]))
+colnames(TInter) <- c(1:14)
+rownames(TInter ) <- c("Dortsman", "Olzenden", "Zandkreek")
+```
+
+#Barplot of aggregated total concentration of Chla per site per month
+```{r}
+ # png("../graphs/Chla per month.png", height = 300, width = 500)
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+barplot(TInter,beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#log = "y", 
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TInter), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+ # dev.off()
+```
 
 
