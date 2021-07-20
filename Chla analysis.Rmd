@@ -126,7 +126,7 @@ OZ <- Images(Station = "Olzenden", log = LOG)
 ZK <- Images(Station = "Zandkreek", log = LOG, leg = TRUE)
 
 ```
-# Bioturbation estimates
+## Bioturbation estimates
 
 The analytical solution of a model describes the concentration of a substance (Chl) versus depth (x) and that has only bioturbation (Db) and decay (k) is:    decay is also given as Lamda
 
@@ -196,7 +196,7 @@ plot(ZKdb$month, ZKdb$db, main = "Zandkreek", xlab = "month", ylab = "Db, cm2/d"
 ```
 ```{r}
 #Chl a total
-TotInter <- data.frame(aggregate(list(Chla = Intermean[,"Chla"]), list(Site = Intermean$Site, MonthNr = Intermean$MonthNr, Number = Intermean$Number), FUN = sum))
+TotInter <- data.frame(aggregate(list(Chla = Intertidal[,"chla"]), list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Number = Intertidal$Number), FUN = sum))
 TotInter <- rbind(TotInter,list(Site = "Olzenden", MonthNr = "9", Number = "5", Chla = 0)) #There is no september measurements for Olzenden
 #THIS IS REARRANGING THE PREVIOUS DATA FRAME SO THAT THE MONTH IS A COLUMN AND THE SITE A ROW
 TInter <- rbind(t(subset(TotInter, Site == "Dortsman")[, "Chla"]), t(subset(TotInter, Site == "Olzenden")[, "Chla"]), t(subset(TotInter, Site == "Zandkreek")[, "Chla"]))
@@ -204,7 +204,7 @@ colnames(TInter) <- c(1:14)
 rownames(TInter ) <- c("Dortsman", "Olzenden", "Zandkreek")
 ```
 
-#Barplot of aggregated total concentration of Chla per site per month
+##Barplot of aggregated total concentration of Chla per site per month
 ```{r}
  # png("../graphs/Chla per month.png", height = 300, width = 500)
 par(mar=c(2,2,1,1), oma=c(2,1,1,1))
@@ -214,5 +214,27 @@ barplot(TInter,beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ",
 legend("topright", legend = rownames(TInter), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
  # dev.off()
 ```
-
+Is there a linear relationship between O2 fluxes and chla concentration?  slice 0 to 3
+```{r}
+#chla from 0 to 3 cm 
+Chla3cm <- Intertidal[Intertidal$Depth < 3.25, ]
+TotChla3cm <- data.frame(aggregate(list(Chla = Chla3cm[,"chla"]), list(Site = Chla3cm$Site, Month = Chla3cm$MonthNr, Number = Chla3cm$Number), FUN = sum))
+TotChla3cm <- rbind(TotChla3cm,list(Site = "Olzenden", Month = "9", Number = 5, Chla = 0))
+TotChla3cm <- TotChla3cm[order(TotChla3cm$Number),]
+```
+tranposing the TChla data
+```{r}
+TChla3cm <- rbind(t(subset(TotChla3cm, Site == "Dortsman")[, "Chla"]), t(subset(TotChla3cm, Site == "Olzenden")[, "Chla"]), t(subset(TotChla3cm, Site == "Zandkreek")[, "Chla"]))
+colnames(TChla3cm) <- c(1:14)
+rownames(TChla3cm ) <- c("Dortsman", "Olzenden", "Zandkreek")
+```
+#Barplot of total concentration of Chla per site per month first 3 cm
+```{r}
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+ChlaMonth3cm <- barplot(TChla3cm, beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ", xaxt = "n")
+axis(1, at = 1:14, by = 3, labels = c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TChla3cm), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+```
 
