@@ -1,0 +1,421 @@
+---
+title: "Chla analysis"
+author: "Dunia"
+date: "7/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plot3D)
+```
+Data files
+```{r}
+Intertidal <- read.csv("../processed_data/Intertidal Chla.csv")[,-1]
+Intertidal <- Intertidal[!is.na(Intertidal$chla),]
+Subtidal <- read.csv("../processed_data/Subtidal Chla.csv")[,-1]
+Subtidal <- Subtidal[!is.na(Subtidal$chla),]
+
+Intertidal$Depth <- (Intertidal$Depth.From + Intertidal$Depth.To) / 2
+Intertidal[Intertidal$Depth == c("7"), "Depth"] <- 6.5
+Intertidal[Intertidal$Depth == c("9"), "Depth"] <- 8.5
+Subtidal$Depth <- (Subtidal$Depth.From + Subtidal$Depth.To) / 2
+```
+```{r}
+Intertidal$Number <- NA
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("3"), "Number" ] <- 1
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("4"), "Number" ] <- 2
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("7"), "Number" ] <- 3
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("8"), "Number" ] <- 4
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("9"), "Number" ] <- 5
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("10"), "Number" ] <- 6
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("11"), "Number" ] <- 7
+Intertidal[Intertidal$Year == c("2018") & Intertidal$MonthNr == c("12"), "Number" ] <- 8
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("1"), "Number" ] <- 9
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("2"), "Number" ] <- 10
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("3"), "Number" ] <- 11
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("4"), "Number" ] <- 12
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("5"), "Number" ] <- 13
+Intertidal[Intertidal$Year == c("2019") & Intertidal$MonthNr == c("6"), "Number" ] <- 14
+```
+
+```{r}
+Intermean <- data.frame(aggregate(list(Chla =Intertidal[,"chla"]), list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Year = Intertidal$Year, Date = Intertidal$Date, Depth = Intertidal$Depth, Number = Intertidal$Number), FUN = mean))
+```
+#Intertidal
+##Depth profiles per site per month
+```{r,fig.width = 15, fig.height = 7}
+par(mfrow = c(1,3), xpd = TRUE, mar = c(1,3,3,1), oma = c(1,4,4,1))
+
+Yearlines <- function(Data = Intermean, Station, col){
+  Site  <- Data[Data$Site == Station, ]
+  Moname <- unique(Site$Number)
+  
+ plot(y = -Site$Depth, x = Site[,"Chla"], log = "x", type = "n", 
+         main = " ", bty = "n", cex.axis = 1.5,  
+         ylim = c(-10,0), xlab = " ", xaxt = "n", ylab = " ")
+ if(Station == "Dortsman"){
+ mtext("DT", cex = 2.5, line = 4)}
+ else if (Station == "Olzenden"){
+ mtext("OZ", cex = 2.5, line = 4)}
+ else if (Station == "Zandkreek"){
+ mtext("ZK", cex = 2.5, line = 4)}
+ 
+  for (m in Moname) {
+      Mon <- subset(Site, Number == m)                  # select corresponding Month
+      with (Mon, lines(x = Mon[,"Chla"], y = -Depth, type = "l", lwd = 2, col = m)) 
+      axis(side = 3, pos = 0, cex.axis = 1.5)
+      mtext("ug/g", side = 3, line = 1.2, cex = 1.7)
+}
+ mtext("cm", side = 2, cex = 2, line = 1, outer = T )
+ 
+ if (Station == "Zandkreek"){
+legend("bottomright", text.col = Moname, legend = c("Mar 2018", "Apr 18", "Jul 18", "Aug 18", "Sep 18", "Oct 18", "Nov 18", "Dec 18", "Jan 19", "Feb 19","Mar 19", "Apr 19", "May 19", "Jun 19"), cex = 1.5, bty = "n") }
+}
+Stats <- unique(Intermean$Site)
+Dat <- length(unique(Intermean$Number))
+
+# gradient <- colorRampPalette(colors = c("green", "red", "blue")) 
+# colours <- gradient(length(Dat))
+
+for (i in 1:length(Stats))
+ Yearlines(Station = Stats[i] ) # , col = colours)
+```
+The numbers from 1 to 14 correspond to the chronological order of the dates, starting in 2018 with the months: March, April, July, August, September, October, November, December and in 2019 January, February, March, May and June.
+```{r}
+Images <- function(Data = Intermean, Station, col = "black", log = FALSE, leg = FALSE){
+  par(mar = c(4,4,3,0))
+  Site <- subset(Data, Site == Station)
+  Site2D <- reshape(Site[,c("Depth","Number", "Chla")], direction = "wide", 
+       timevar = "Depth", idvar = "Number")
+  Mon <- as.numeric(Site2D$Number)
+  depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "Chla.",""))
+  colnames(Site2D)[-1] <- depth
+  # this should be done properly: integrated over depth, taking into account thickness of slices and porosity
+  plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station, xaxt = "n") 
+  axis(1, at =c(1:14), labels= c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))#Chla unit is per gram, we need to transform it to cm3
+  par(mar = c(4,4,3,1))
+   image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
+       xlab = "Month", ylab = "depth", xaxt = "n")
+    axis(1, at =c(1:14), labels= c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun"))
+  par(mar = c(3,4,4,3))
+  if (! log)
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = "grey",
+  lwd = 2, lty = 1)
+  else
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = jet.col(14),#"grey",
+  lwd = 2, lty = 1, log = "y", ylim = c(10,0.2))
+  
+  if (leg) #Legend
+  legend("bottomright", fill = jet.col(14), legend = Mon, title = "month", bty = "n")  
+  
+  invisible(Site2D)
+  
+}
+
+par(mfcol = c(3,3), oma = c(2,0,0,2), las = 1)
+LOG <- TRUE
+
+DT <- Images(Station = "Dortsman", log = LOG)
+OZ <- Images(Station = "Olzenden", log = LOG)
+ZK <- Images(Station = "Zandkreek", log = LOG, leg = TRUE)
+
+```
+## Bioturbation estimates
+
+The analytical solution of a model describes the concentration of a substance (Chl) versus depth (x) and that has only bioturbation (Db) and decay (k) is:    decay is also given as Lamda
+
+Chl(x) = Chl(0)* exp(-sqrt(k/Db)*x)
+
+The decay rate, k for chl is around 0.05/day, and usually it is assumed that there is no temperature dependence.
+NOTE: Morys 2016 gives a K of 0.01/d for muddy sediments, 
+
+Taking a log of both the right- and left-hand side, we get:
+
+log(Chl(x)) = log(Chl(0)* exp(-sqrt(k/Db)*x))
+
+log(Chl(x)) = -sqrt(k/Db)*x + log(Chl(0)) 
+
+y = a*x + b
+
+where coefficient "a" (the first coeff in a linear model) is -sqrt(k/db). Thus Db =1/(-a ^2/k) unit is Db= cm^2 / y
+
+** NOTE for myself: The equation was transformed as follows: a = -sqrt(k/db) -> -a = sqrt(k/db) -> -a^2 = k/db -> db(-a^2) = k -> db = k/-a^2 then we multiply the right side numerator and denominator by 1/k so we get k (1/k) / -a^2 (1/k) and this results in 1 / (-a^2 / k)
+
+This is assuming independence from temperature
+```{r, fig.width=8, fig.height=8}
+Depth <- (as.numeric(colnames(DT)[-1]))
+#par(ask = TRUE)
+
+LinMOd <- function(STa, prt = TRUE, k=0.05, maxD = rep(10, nrow(ST))){ #K = 0.01 in Morys and Karline suggests 0.05
+
+DB <- rsq <- NULL
+M <- STa[,1]
+ST <- STa[,-1]
+ par(mar = c(5, 4, 4, 4), oma = c(4,4,4,4))
+for (i in 1:nrow(ST)){
+  Dat <- ST[i,Depth <= maxD[i]]
+  DD <- Depth[Depth <= maxD[i]]
+  plot(Depth, log(ST[i,]), main = M[i], xlab = "Depth", ylab = "log(Chl)")
+  dblm <- lm(log(as.numeric(Dat))~DD)
+  sdblm<-summary(dblm)
+  if(prt) print(sdblm)
+  DB <- c(DB, k/(-coef(dblm)[1])^2)
+  rsq <- c(rsq, sdblm$r.squared)
+  abline(dblm)
+}
+ #mtext(outer = TRUE, side = 3,  ????formalArgs(LinMOd)[1] , cex = 1) #need to fix this so that it gives the name of the station
+
+plot(M, DB, xlab = "Month", ylab = "Db cm2/d")
+plot(M, rsq, xlab = "Month", ylab = "rsq")
+
+  ZK_Db <- data.frame(month = M, db = DB, rsq = rsq)
+  return(ZK_Db)
+}
+
+#par(mfrow = c(4, 3))
+layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,0,0), 4, 4, byrow = TRUE))
+DTdb  <- LinMOd(DT, FALSE,  maxD = rep(4, times = 14)) 
+OZdb <- LinMOd(OZ, FALSE, maxD = rep(4, times = 14))
+ZKdb  <- LinMOd(ZK, FALSE,  maxD = rep(4, times = 14)) 
+
+summary(DTdb)
+summary(OZdb)
+summary(ZKdb)
+```
+The fit of the lm lines looks reasobanly ok in these intertidal stations with some few exceptions. I think it is still possible to calculate bioturbation, but we should discuss it together
+```{r}
+par(mfrow = c(3,1))
+plot(DTdb$month, DTdb$db, main = "Dortsman", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(OZdb$month, OZdb$db, main = "Olzenden", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(ZKdb$month, ZKdb$db, main = "Zandkreek", xlab = "month", ylab = "Db, cm2/d", type = "b")
+```
+```{r}
+#Chl a total
+TotInter <- data.frame(aggregate(list(Chla = Intertidal[,"chla"]), list(Site = Intertidal$Site, MonthNr = Intertidal$MonthNr, Number = Intertidal$Number), FUN = sum))
+TotInter <- rbind(TotInter,list(Site = "Olzenden", MonthNr = "9", Number = 5, Chla = 0))
+TotInter <- TotInter[order(TotInter$Number),]#There is no september measurements for Olzenden
+#THIS IS REARRANGING THE PREVIOUS DATA FRAME SO THAT THE MONTH IS A COLUMN AND THE SITE A ROW
+TInter <- rbind(t(subset(TotInter, Site == "Dortsman")[, "Chla"]), t(subset(TotInter, Site == "Olzenden")[, "Chla"]), t(subset(TotInter, Site == "Zandkreek")[, "Chla"]))
+colnames(TInter) <- c(1:14)
+rownames(TInter ) <- c("Dortsman", "Olzenden", "Zandkreek")
+```
+
+##Barplot of aggregated total concentration of Chla per site per month
+```{r}
+ # png("../graphs/Chla per month.png", height = 300, width = 500)
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+barplot(TInter,beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#log = "y", 
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TInter), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+ # dev.off()
+```
+##Top sediment slice 0 to 3
+```{r}
+#chla from 0 to 3 cm 
+Chla3cm <- Intertidal[Intertidal$Depth < 3.25, ]
+TotChla3cm <- data.frame(aggregate(list(Chla = Chla3cm[,"chla"]), list(Site = Chla3cm$Site, Month = Chla3cm$MonthNr, Number = Chla3cm$Number), FUN = sum))
+TotChla3cm <- rbind(TotChla3cm,list(Site = "Olzenden", Month = "9", Number = 5, Chla = 0))
+TotChla3cm <- TotChla3cm[order(TotChla3cm$Number),]
+```
+tranposing the TChla data
+```{r}
+TChla3cm <- rbind(t(subset(TotChla3cm, Site == "Dortsman")[, "Chla"]), t(subset(TotChla3cm, Site == "Olzenden")[, "Chla"]), t(subset(TotChla3cm, Site == "Zandkreek")[, "Chla"]))
+colnames(TChla3cm) <- c("Mar 18", "Apr", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan 19", "Feb", "Mar", "Apr", "May", "Jun") #c(1:14)
+rownames(TChla3cm ) <- c("Dortsman", "Olzenden", "Zandkreek")
+```
+Barplot of total concentration of Chla per site per month first 3 cm
+```{r}
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+ChlaMonth3cm <- barplot(TChla3cm, beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#, xaxt = "n")
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TChla3cm), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+```
+#Subtidal
+```{r}
+Submean <- data.frame(aggregate(list(Chla =Subtidal[,"chla"]), list(Site = Subtidal$Site, MonthNr = Subtidal$MonthNr, Year = Subtidal$Year, Date = Subtidal$Date, Depth = Subtidal$Depth), FUN = mean)) #, Number = Subtidal$Number)
+```
+##Depth profiles per site per month
+```{r,fig.width = 15, fig.height = 7}
+
+par(mfrow = c(1,3), xpd = TRUE, mar = c(1,3,3,1), oma = c(1,4,4,1))
+
+Yearlines <- function(Data = Submean, Station, col){
+  Site  <- Data[Data$Site == Station, ]
+  Moname <- unique(Site$MonthNr)
+  
+ plot(y = -Site$Depth, x = Site[,"Chla"], log = "x", type = "n", 
+         main = " ", bty = "n", cex.axis = 1.5,  
+         ylim = c(-10,0), xlab = " ", xaxt = "n", ylab = " ")
+ if(Station == "Hammon"){
+ mtext("HM", cex = 2.5, line = 4)}
+ else if (Station == "Lodijkseg"){
+ mtext("LD", cex = 2.5, line = 4)}
+ else if (Station == "Vianen"){
+ mtext("VN", cex = 2.5, line = 4)}
+ 
+  for (m in Moname) {
+      Mon <- subset(Site, MonthNr == m)                  # select corresponding Month
+      with (Mon, lines(x = Mon[,"Chla"], y = -Depth, type = "l", lwd = 2, col = m)) 
+      axis(side = 3, pos = 0, cex.axis = 1.5)
+      mtext("ug/g", side = 3, line = 1.2, cex = 1.7)
+}
+ mtext("cm", side = 2, cex = 2, line = 1, outer = T )
+ 
+ if (Station == "Vianen"){
+legend("bottomright", text.col = Moname, legend = c("Apr", "May", "Aug", "Sep", "Oct", "Dec"), cex = 1.5, bty = "n") }
+}
+Stats <- unique(Subtidal$Site)
+Dat <- length(unique(Subtidal$MonthNr))
+
+# gradient <- colorRampPalette(colors = c("green", "red", "blue")) 
+# colours <- gradient(length(Dat))
+
+for (i in 1:length(Stats))
+ Yearlines(Station = Stats[i] ) # , col = colours)
+```
+```{r}
+Images <- function(Data = Submean, Station, col = "black", log = FALSE, leg = FALSE){
+  par(mar = c(4,4,3,0))
+  Site <- subset(Data, Site == Station)
+  Site2D <- reshape(Site[,c("Depth","MonthNr", "Chla")], direction = "wide", 
+       timevar = "Depth", idvar = "MonthNr")
+  Mon <- as.numeric(Site2D$MonthNr)
+  depth <- as.numeric(gsub(x=colnames(Site2D)[-1], "Chla.",""))
+  colnames(Site2D)[-1] <- depth
+  # this should be done properly: integrated over depth, taking into account thickness of slices and porosity
+  plot(Mon, rowSums(Site2D[,-1], na.rm = T), type = "l", ylab = "?gChl/g", main = Station, xaxt = "n") 
+  axis(1, at =Mon, labels= Mon)#Chla unit is per gram, we need to transform it to cm3
+  par(mar = c(4,4,3,1))
+   image2D(x = Mon, y = -depth, z = as.matrix(Site2D[,-1]), resfac = 4,
+       xlab = "Month", ylab = "depth", xaxt = "n")
+    axis(1, at =Mon, labels= Mon)
+  par(mar = c(3,4,4,3))
+  if (! log)
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = "grey",
+  lwd = 2, lty = 1)
+  else
+  matplot(x = t(Site2D[,-1]), y = depth, type = "l", col = jet.col(6),#"grey",
+  lwd = 2, lty = 1, log = "y", ylim = c(10,0.2))
+  
+  if (leg) #Legend
+  legend("bottomright", fill = jet.col(6), legend = Mon, title = "month", bty = "n")  
+  
+  invisible(Site2D)
+}
+
+par(mfcol = c(3,3), oma = c(2,0,0,2), las = 1)
+LOG <- TRUE
+
+HM <- Images(Station = "Hammon", log = LOG)
+LD <- Images(Station = "Lodijkseg", log = LOG)
+VN <- Images(Station = "Vianen", log = LOG, leg = TRUE)
+
+```
+##Bioturbation estimate
+```{r, fig.width=8, fig.height=8}
+Depth <- (as.numeric(colnames(HM)[-1]))
+#par(ask = TRUE)
+LinMOd <- function(STa, prt = TRUE, k=0.05, maxD = rep(10, nrow(ST))){ #K = 0.01 in Morys and Karline suggests 0.05
+DB <- rsq <- NULL
+M <- STa[,1]
+ST <- STa[,-1]
+ par(mar = c(5, 4, 4, 4), oma = c(4,4,4,4))
+for (i in 1:nrow(ST)){
+  Dat <- ST[i,Depth <= maxD[i]]
+  DD <- Depth[Depth <= maxD[i]]
+  plot(Depth, log(ST[i,]), main = M[i], xlab = "Depth", ylab = "log(Chl)")
+  dblm <- lm(log(as.numeric(Dat))~DD)
+  sdblm<-summary(dblm)
+  if(prt) print(sdblm)
+  DB <- c(DB, k/(-coef(dblm)[1])^2)
+  rsq <- c(rsq, sdblm$r.squared)
+  abline(dblm)
+}
+ #mtext(outer = TRUE, side = 3,  ????formalArgs(LinMOd)[1] , cex = 1) #need to fix this so that it gives the name of the station
+
+plot(M, DB, xlab = "Month", ylab = "Db cm2/d")
+plot(M, rsq, xlab = "Month", ylab = "rsq")
+
+  ZK_Db <- data.frame(month = M, db = DB, rsq = rsq)
+  return(ZK_Db)
+}
+
+#par(mfrow = c(4, 3))
+layout(matrix(c(1,2,3,4,5,6,0,0), 3, 2, byrow = TRUE))
+HMdb  <- LinMOd(HM, FALSE,  maxD = rep(4, times = 6)) 
+LDdb <- LinMOd(LD, FALSE, maxD = rep(4, times = 6))
+VNdb  <- LinMOd(VN, FALSE,  maxD = rep(4, times = 6)) 
+
+summary(HMdb)
+summary(LDdb)
+summary(VNdb)
+```
+```{r}
+par(mfrow = c(3,1))
+plot(HMdb$month, HMdb$db, main = "Hammon", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(LDdb$month, LDdb$db, main = "Lodijkseg", xlab = "month", ylab = "Db, cm2/d", type = "b")
+plot(VNdb$month, VNdb$db, main = "Vianen", xlab = "month", ylab = "Db, cm2/d", type = "b")
+``
+
+Bioturbation estimate from Vianen may not be right. The lm fit for the bioturbation estimate per month was not very good
+```{r}
+#Chl a total
+TotSub <- data.frame(aggregate(list(Chla = Subtidal[,"chla"]), list(Site = Subtidal$Site, MonthNr = Subtidal$MonthNr), FUN = sum))
+TotSub <- rbind(TotSub,list(Site = "Lodijkseg", MonthNr = 5, Chla = 0))
+TotSub <- rbind(TotSub,list(Site = "Vianen", MonthNr = 5, Chla = 0))#There is no May measurements for Lodijkseg and Vianen
+TotSub <- TotSub[order(TotSub$MonthNr),]
+#THIS IS REARRANGING THE PREVIOUS DATA FRAME SO THAT THE MONTH IS A COLUMN AND THE SITE A ROW
+TSub <- rbind(t(subset(TotSub, Site == "Hammon")[, "Chla"]), t(subset(TotSub, Site == "Lodijkseg")[, "Chla"]), t(subset(TotSub, Site == "Vianen")[, "Chla"]))
+colnames(TSub) <- c(4,5,8,9,10,12)
+rownames(TSub ) <- c("Hammon", "Lodijkseg", "Vianen")
+```
+
+##Barplot of aggregated total concentration of Chla per site per month
+```{r}
+ # png("../graphs/Chla per month.png", height = 300, width = 500)
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+barplot(TSub,beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#log = "y", 
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TSub), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+ # dev.off()
+```
+##Top sediment slice 0 to 3
+```{r}
+#chla from 0 to 3 cm 
+Chla3cm <- Subtidal[Subtidal$Depth < 3.25, ]
+TotChla3cm <- data.frame(aggregate(list(Chla = Chla3cm[,"chla"]), list(Site = Chla3cm$Site, MonthNr = Chla3cm$MonthNr), FUN = sum))
+TotChla3cm <- rbind(TotChla3cm,list(Site = "Lodijkseg", MonthNr = 5, Chla = 0))
+TotChla3cm <- rbind(TotChla3cm,list(Site = "Vianen", MonthNr = 5, Chla = 0))
+TotChla3cm <- TotChla3cm[order(TotChla3cm$MonthNr),]
+```
+tranposing the TChla data
+```{r}
+TChla3cm <- rbind(t(subset(TotChla3cm, Site == "Hammon")[, "Chla"]), t(subset(TotChla3cm, Site == "Lodijkseg")[, "Chla"]), t(subset(TotChla3cm, Site == "Vianen")[, "Chla"]))
+colnames(TChla3cm) <- c(4,5,8,9,10,12) #c(1:14)
+rownames(TChla3cm ) <- c("Hammon", "Lodijkseg", "Vianen")
+```
+Barplot of total concentration of Chla per site per month first 3 cm
+```{r}
+par(mar=c(2,2,1,1), oma=c(2,1,1,1))
+ChlaMonth3cm <- barplot(TChla3cm, beside = T, col = c("darkgray", "#009E73","#D55E00"), xlab = " ", ylab = " ")#, xaxt = "n")
+ mtext(outer = TRUE, side = 2, "ug/g", cex = 1)
+ mtext(outer = TRUE, side = 1, "Month", cex = 1)
+legend("topright", legend = rownames(TChla3cm), text.col = c("darkgray", "#009E73","#D55E00"), bty = "n",  xpd = NA )
+```
+
+# JT analysis
+muddy sites (Zandkreek/Vianen) have lower bioturbation rates
+```{r}
+library(vioplot)
+plot(1, xlab = "sites", ylab = "Db, cm2/d", xlim = c(0.5,6.5), ylim = c(0,0.022), xaxt = "n")
+grid(nx=0, ny=20, lty = 1)
+vioplot(DTdb$db,OZdb$db, ZKdb$db, HMdb$db,LDdb$db,VNdb$db, main = "", add = TRUE, col = "grey70", border = NA)
+axis(1, labels = c("D","O","Z","H","L","V"), at = 1:6)
+
+Msub = c(mean(DTdb$db), mean(OZdb$db), mean(ZKdb$db))
+Mint = c(mean(HMdb$db), mean(LDdb$db), mean(VNdb$db))
+```
