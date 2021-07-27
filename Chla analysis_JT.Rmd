@@ -358,7 +358,7 @@ par(mfrow = c(3,1))
 plot(HMdb$month, HMdb$db, main = "Hammon", xlab = "month", ylab = "Db, cm2/d", type = "b")
 plot(LDdb$month, LDdb$db, main = "Lodijkseg", xlab = "month", ylab = "Db, cm2/d", type = "b")
 plot(VNdb$month, VNdb$db, main = "Vianen", xlab = "month", ylab = "Db, cm2/d", type = "b")
-``
+```
 
 Bioturbation estimate from Vianen may not be right. The lm fit for the bioturbation estimate per month was not very good
 ```{r}
